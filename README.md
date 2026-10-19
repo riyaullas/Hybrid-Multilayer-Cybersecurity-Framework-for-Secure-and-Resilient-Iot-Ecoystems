@@ -72,7 +72,7 @@ Open http://localhost:5173 and sign in with the administrator credentials you cr
 curl -X POST http://localhost:8000/api/v1/seed -H "Authorization: Bearer YOUR_TOKEN"
 ```
 
-4. Open **Guided Demo Lab** and execute scenarios Aâ€“H.
+4. Open **Guided Demo Lab** and execute scenarios AÔÇôH.
 5. Review changes in **Security Incidents**, **Trust & Risk Engine**, **Audit Logs**, and **Research Evaluation**.
 6. Use the authentication page to generate a challenge, simulate local signing, and verify. Modify the signature before verification to demonstrate rejection.
 
@@ -110,7 +110,7 @@ All API data are authenticated except health/readiness and registration/login. I
 
 ## Risk model
 
-Initial layer weights: authentication 25%, behavior 20%, communication 20%, credential misuse 15%, firmware integrity 20%. For each evaluated layer, the latest high-severity evidence among recent events contributes a simple risk value (Info 5, Medium 40, High 75, Critical 100). The aggregate is the weighted mean over **evaluated** layers only; coverage is the sum of evaluated layer weights. Unevaluated layers are reported explicitly, not silently treated as safe. Trust = 100 âˆ’ risk. This is an illustrative scoring policy, not a validated compromise probability.
+Initial layer weights: authentication 25%, behavior 20%, communication 20%, credential misuse 15%, firmware integrity 20%. For each evaluated layer, the latest high-severity evidence among recent events contributes a simple risk value (Info 5, Medium 40, High 75, Critical 100). The aggregate is the weighted mean over **evaluated** layers only; coverage is the sum of evaluated layer weights. Unevaluated layers are reported explicitly, not silently treated as safe. Trust = 100 ÔêÆ risk. This is an illustrative scoring policy, not a validated compromise probability.
 
 ## Security notes and limitations
 
@@ -129,7 +129,7 @@ Initial layer weights: authentication 25%, behavior 20%, communication 20%, cred
 - **Private-key file error:** do not delete `backend/device_keys/` during an authentication demonstration; re-register/reseed devices if the local demo key is missing.
 - **Database reset:** stop the backend, back up if needed, remove `backend/medsecure.db` and `backend/device_keys/`, restart the backend, create an administrator, and seed again. This deletes local demo state.
 
-## Suggested lecturer demonstration (5â€“7 minutes)
+## Suggested lecturer demonstration (5ÔÇô7 minutes)
 
 1. Explain the five security layers and synthetic-only boundary.
 2. Show the device inventory and current risk distribution.
