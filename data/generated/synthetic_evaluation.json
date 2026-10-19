@@ -1,0 +1,28 @@
+{
+  "model": "IsolationForest",
+  "seed": 42,
+  "training_samples": 600,
+  "test_samples": 400,
+  "features": [
+    "packet_rate",
+    "response_ms",
+    "cpu_pct",
+    "memory_pct",
+    "failed_requests",
+    "connection_frequency",
+    "bytes_sent",
+    "session_seconds",
+    "reconnections",
+    "error_frequency"
+  ],
+  "true_positive": 200,
+  "true_negative": 154,
+  "false_positive": 46,
+  "false_negative": 0,
+  "precision": 0.8130081300813008,
+  "recall": 1.0,
+  "f1": 0.8968609865470852,
+  "detection_rate": 1.0,
+  "false_positive_rate": 0.23,
+  "note": "Synthetic benchmark; metrics describe this generated dataset only."
+}

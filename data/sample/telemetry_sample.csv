@@ -1,0 +1,5 @@
+packet_rate,response_ms,cpu_pct,memory_pct,failed_requests,connection_frequency,bytes_sent,session_seconds,reconnections,error_frequency
+38,32,28,42,0,3,17500,310,0,0
+45,41,35,48,1,4,19200,280,0,1
+132,188,91,92,10,14,94000,42,7,9
+28,29,22,40,0,2,16000,360,0,0

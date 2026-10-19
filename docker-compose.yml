@@ -1,0 +1,17 @@
+services:
+  backend:
+    build: ./backend
+    ports: ["8000:8000"]
+    environment:
+      DATABASE_URL: sqlite:////app/data/medsecure.db
+      JWT_SECRET: ${JWT_SECRET:-local-demo-secret-change-this-before-use}
+      FRONTEND_ORIGINS: http://localhost:5173
+    volumes:
+      - ./data:/app/data
+      - ./backend/device_keys:/app/app/device_keys
+  frontend:
+    build: ./frontend
+    ports: ["5173:5173"]
+    environment:
+      VITE_API_URL: http://localhost:8000/api/v1
+    depends_on: [backend]

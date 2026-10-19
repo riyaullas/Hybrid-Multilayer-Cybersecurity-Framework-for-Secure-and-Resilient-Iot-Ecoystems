@@ -1,0 +1,31 @@
+.venv/
+__pycache__/
+*.py[cod]
+*.db
+.env
+node_modules/
+dist/
+backend/device_keys/*.pem
+.DS_Store
+
+# Python and local environments
+backend/.venv/
+frontend/node_modules/
+frontend/dist/
+frontend/tsconfig.tsbuildinfo
+
+# Secrets and local databases
+.env
+.env.*
+!.env.example
+*.db
+*.sqlite
+*.sqlite3
+
+# Credentials and private keys
+*.pem
+*.key
+
+# Python-generated files
+__pycache__/
+*.py[cod]
