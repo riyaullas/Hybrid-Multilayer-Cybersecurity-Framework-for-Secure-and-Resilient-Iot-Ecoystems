@@ -1,7 +1,9 @@
 import {useEffect,useState} from 'react'; import {Routes,Route,Navigate,useNavigate,useLocation} from 'react-router-dom';
-import {Activity, ShieldCheck, LayoutDashboard, Cpu, Radio, KeyRound, FileCheck2, Gauge, Siren, Network, FlaskConical, ChartNoAxesCombined, ScrollText, Settings, Info, LogOut, Search, Bell, Menu, Plus, Play, RefreshCw, Download, CheckCircle2, AlertTriangle, LockKeyhole, HeartPulse, ChevronRight, Server, Wifi, Fingerprint, Eye, X} from 'lucide-react';
+import {Activity, ShieldCheck, LayoutDashboard, Cpu, Radio, KeyRound, FileCheck2, Gauge, Siren, Network, FlaskConical, ChartNoAxesCombined, ScrollText, Settings, Info, LogOut, Search, Bell, Menu, Plus, Play, RefreshCw, Download, CheckCircle2, AlertTriangle, LockKeyhole, HeartPulse, ChevronRight, Server, Wifi, Fingerprint, Eye, X, Image as ImageIcon} from 'lucide-react';
 
 import NetworkDetection from './NetworkDetection';
+import ImageDetection from './ImageDetection';
+
 
 import {api,login,setToken,getToken} from './services/api';
 
@@ -13,6 +15,7 @@ const nav = [
   ['Device Authentication', '/authentication', Fingerprint],
   ['Behavioral AI Lab', '/behavior', Activity],
   ['Network Traffic AI', '/network-detection', Activity],
+  ['Image-Based Detection', '/image-detection', ImageIcon],
   ['Communication Security', '/communication', Radio],
   ['Firmware Integrity', '/firmware', FileCheck2],
   ['Trust & Risk Engine', '/risk', Gauge],
@@ -33,6 +36,7 @@ function logout(){setToken('');setUser(null);navigate('/')}
 return <div className={`app-shell ${collapsed?'collapsed':''}`}><aside className={`sidebar ${mobile?'mobile-open':''}`}><div className="side-brand"><div className="brand-mark small"><ShieldCheck/></div>{!collapsed&&<div><b>MedSecure <span>Sentinel</span></b><small>SECURITY PLATFORM</small></div>}<button className="icon-btn mobile-close" onClick={()=>setMobile(false)}><X/></button></div><div className="workspace-label">{!collapsed?'WORKSPACE':''}</div><nav>{nav.map(([label,path,Icon])=><button key={path} className={`nav-link ${location.pathname===path?'active':''}`} title={label} onClick={()=>{navigate(path);setMobile(false)}}><Icon size={18}/>{!collapsed&&<span>{label}</span>}{location.pathname===path&&!collapsed&&<i/>}</button>)}</nav><div className="sidebar-bottom"><div className="prototype-box"><span className="status-dot"/>{!collapsed&&<div><b>Prototype environment</b><small>All events are simulated</small></div>}</div><button className="nav-link logout" onClick={logout}><LogOut size={18}/>{!collapsed&&<span>Sign out</span>}</button><button className="collapse-btn" onClick={()=>setCollapsed(!collapsed)}>{collapsed?'›':'‹'} {!collapsed&&'Collapse sidebar'}</button></div></aside>{mobile&&<div className="mobile-scrim" onClick={()=>setMobile(false)}/>}<main className="main-area"><header className="topbar"><div className="top-left"><button className="icon-btn mobile-menu" onClick={()=>setMobile(true)}><Menu/></button><div className="breadcrumbs">Workspace <ChevronRight size={13}/><b>{current[0]}</b></div></div><div className="top-actions"><div className={`api-status ${online?'':'offline'}`}><span className="status-dot"/>{online?'API connected':'API offline'}</div><div className="synthetic-tag"><Activity size={13}/> SYNTHETIC DATA</div><button className="icon-btn" title="Notifications" onClick={()=>navigate('/incidents')}><Bell size={18}/><i className="notify-dot"/></button><div className="user-chip"><div className="avatar">{user.username?.[0]?.toUpperCase()}</div><div><b>{user.username}</b><small>{user.role}</small></div></div></div></header><div className="page-wrap"><Routes><Route path="/" element={<Navigate to="/overview" replace/>}/><Route path="/overview" element={<Dashboard/>}/><Route path="/devices" element={<Devices role={user.role}/>}/><Route path="/authentication" element={<Authentication/>}/>
 <Route path="/behavior" element={<Behavior/>}/>
 <Route path="/network-detection" element={<NetworkDetection/>}/>
+<Route path="/image-detection" element={<ImageDetection />} />
 <Route path="/communication" element={<Communication/>}/>
 <Route path="/firmware" element={<Firmware/>}/>
 <Route path="/risk" element={<Risk/>}/>

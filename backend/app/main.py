@@ -1,6 +1,8 @@
 import os, json, hashlib, secrets, time, re
 from datetime import datetime, timedelta, timezone
 from typing import Optional
+from io import BytesIO
+from PIL import Image, UnidentifiedImageError
 from fastapi import FastAPI, Depends, HTTPException, Header, UploadFile, File, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
@@ -14,7 +16,7 @@ from .network_detection import predict_network_traffic
 
 Base.metadata.create_all(bind=engine)
 app=FastAPI(title='MedSecure Sentinel API', version='1.0.0', description='Synthetic healthcare IoT cybersecurity research prototype. All generated activity is simulated.')
-origins=os.getenv('FRONTEND_ORIGINS','http://localhost:5173').split(',')
+origins=os.getenv('FRONTEND_ORIGINS','http://localhost:5173,http://localhost:5174').split(',')
 app.add_middleware(CORSMiddleware, allow_origins=[o.strip() for o in origins], allow_credentials=True, allow_methods=['*'], allow_headers=['*'])
 KEY_DIR=os.path.join(os.path.dirname(__file__),'..','device_keys'); os.makedirs(KEY_DIR,exist_ok=True)
 DEFAULT_SETTINGS={'risk_weights':{'authentication':25,'behavior':20,'communication':20,'credentials':15,'firmware':20},'communication':{'latency_ms':120,'jitter_ms':35,'packet_loss_pct':5,'reconnects':8},'credentials':{'failed_attempts':5,'window_minutes':10},'minimum_firmware_version':'1.0.0','low_coverage_alert_pct':40,'ml':{'contamination':0.05,'seed':42}}
@@ -158,23 +160,6 @@ def behavior(body:InferIn, db:Session=Depends(get_db), user:User=Depends(current
     if d and result['classification']=='Anomalous': create_incident(db,'Abnormal device behavior','Behavioral AI','High',d.device_id,'Isolation Forest marked synthetic telemetry as anomalous.',result); recalc_risk(db,d)
     audit(db,user.username,'behavior.analyze',d.device_id if d else 'batch',metadata={'classification':result['classification']}); db.commit(); return result
 @app.post('/api/v1/analysis/behavior/evaluate')
-
-
-
-class NetworkTrafficIn(BaseModel):
-    sample: dict[str, float]
-
-
-@app.post("/api/v1/analysis/network-traffic")
-def network_traffic_analysis(
-    body: NetworkTrafficIn,
-    user: User = Depends(current_user),
-):
-    try:
-        return predict_network_traffic(body.sample)
-    except ValueError as exc:
-        raise HTTPException(status_code=422, detail=str(exc))
-
 def behavior_eval(user:User=Depends(current_user)): return evaluate()
 
 @app.post('/api/v1/simulations/{scenario}')
@@ -271,3 +256,33 @@ def seed(db:Session=Depends(get_db), user:User=Depends(admin_user)):
         with open(os.path.join(KEY_DIR,did+'.pem'),'w') as f: f.write(priv)
         os.chmod(os.path.join(KEY_DIR,did+'.pem'),0o600)
     db.commit(); audit(db,user.username,'demo.seed','devices',metadata={'count':len(samples)}); db.commit(); return {'message':'Synthetic devices initialized','count':len(samples),'synthetic':True}
+
+@app.post('/api/v1/image-detection/predict')
+async def predict_uploaded_image(file: UploadFile = File(...)):
+    if file.content_type not in ('image/png', 'image/jpeg'):
+        raise HTTPException(
+            status_code=415,
+            detail='Upload a PNG or JPEG traffic-representation image.'
+        )
+
+    contents = await file.read(2 * 1024 * 1024 + 1)
+    if len(contents) > 2 * 1024 * 1024:
+        raise HTTPException(
+            status_code=413,
+            detail='Image must be under 2 MB.'
+        )
+
+    try:
+        with Image.open(BytesIO(contents)) as image:
+            image.load()
+            if image.size != (8, 8):
+                raise HTTPException(
+                    status_code=422,
+                    detail='This CNN expects an 8x8 generated traffic image.'
+                )
+            from .image_detection.cnn_service import predict_image
+            result = predict_image(image)
+    except UnidentifiedImageError:
+        raise HTTPException(status_code=400, detail='Invalid image file.')
+
+    return result
