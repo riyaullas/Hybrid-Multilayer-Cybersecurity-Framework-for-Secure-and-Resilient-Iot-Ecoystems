@@ -17,7 +17,17 @@ from .network_detection import predict_network_traffic
 Base.metadata.create_all(bind=engine)
 app=FastAPI(title='MedSecure Sentinel API', version='1.0.0', description='Synthetic healthcare IoT cybersecurity research prototype. All generated activity is simulated.')
 origins=os.getenv('FRONTEND_ORIGINS','http://localhost:5173,http://localhost:5174').split(',')
-app.add_middleware(CORSMiddleware, allow_origins=[o.strip() for o in origins], allow_credentials=True, allow_methods=['*'], allow_headers=['*'])
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "http://localhost:5175",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 KEY_DIR=os.path.join(os.path.dirname(__file__),'..','device_keys'); os.makedirs(KEY_DIR,exist_ok=True)
 DEFAULT_SETTINGS={'risk_weights':{'authentication':25,'behavior':20,'communication':20,'credentials':15,'firmware':20},'communication':{'latency_ms':120,'jitter_ms':35,'packet_loss_pct':5,'reconnects':8},'credentials':{'failed_attempts':5,'window_minutes':10},'minimum_firmware_version':'1.0.0','low_coverage_alert_pct':40,'ml':{'contamination':0.05,'seed':42}}
 
