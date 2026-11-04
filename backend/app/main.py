@@ -507,3 +507,27 @@ async def predict_uploaded_image(file: UploadFile = File(...), db: Session = Dep
     audit(db, user.username, 'image.predict', file.filename or 'upload', metadata={'prediction': result['prediction'], 'confidence': result['confidence']})
     db.commit()
     return result
+
+
+# ---------------------------------------------------------------------------
+# Network-traffic detection (Random Forest trained on CICIoMT2024 flow features)
+# ---------------------------------------------------------------------------
+class NetworkTrafficIn(BaseModel):
+    sample: dict[str, float]
+
+
+@app.post('/api/v1/analysis/network-traffic')
+def network_traffic_analysis(body: NetworkTrafficIn, db: Session = Depends(get_db), user: User = Depends(current_user)):
+    try:
+        # Imported lazily: the module loads a ~49 MB model, and the rest of the API
+        # should still start if the artifacts are missing.
+        from .network_detection import predict_network_traffic
+    except (ImportError, RuntimeError) as exc:
+        raise HTTPException(503, f'Network traffic detection is unavailable: {exc}')
+    try:
+        result = predict_network_traffic(body.sample)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc))
+    audit(db, user.username, 'network.analyze', 'network-flow', metadata={'classification': result['classification']})
+    db.commit()
+    return result

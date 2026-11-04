@@ -1,0 +1,35 @@
+{
+  "model": "RFE + MLP",
+  "test_samples": 81267,
+  "accuracy": 0.9609189461897203,
+  "precision_macro": 0.9635322727324229,
+  "recall_macro": 0.9587968319096742,
+  "f1_macro": 0.960524943316133,
+  "classification_report": {
+    "Attack": {
+      "precision": 0.9426803131697502,
+      "recall": 0.9872881355932204,
+      "f1-score": 0.9644687087463362,
+      "support": 43660.0
+    },
+    "Benign": {
+      "precision": 0.9843842322950958,
+      "recall": 0.9303055282261281,
+      "f1-score": 0.9565811778859299,
+      "support": 37607.0
+    },
+    "accuracy": 0.9609189461897203,
+    "macro avg": {
+      "precision": 0.9635322727324229,
+      "recall": 0.9587968319096742,
+      "f1-score": 0.960524943316133,
+      "support": 81267.0
+    },
+    "weighted avg": {
+      "precision": 0.9619791587841677,
+      "recall": 0.9609189461897203,
+      "f1-score": 0.9608186863132786,
+      "support": 81267.0
+    }
+  }
+}

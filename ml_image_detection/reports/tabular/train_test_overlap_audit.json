@@ -1,0 +1,8 @@
+{
+  "train_rows": 381815,
+  "test_rows": 81267,
+  "train_unique_feature_rows": 381815,
+  "test_unique_feature_rows": 81267,
+  "shared_unique_feature_row_hashes": 0,
+  "warning": "Hash overlap is a screening check, not proof of leakage. Review source split methodology and verify any matches before drawing conclusions."
+}

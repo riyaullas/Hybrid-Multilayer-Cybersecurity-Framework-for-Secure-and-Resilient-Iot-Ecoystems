@@ -1,0 +1,58 @@
+{
+  "dataset": "CICIoMT2024 filtered Wi-Fi/MQTT binary subset",
+  "random_state": 42,
+  "training_samples": 381815,
+  "testing_samples": 81267,
+  "original_numeric_feature_count": 45,
+  "rfe_selected_feature_count": 20,
+  "selected_features": [
+    "Header_Length",
+    "Protocol Type",
+    "Duration",
+    "Rate",
+    "Srate",
+    "fin_flag_number",
+    "syn_flag_number",
+    "rst_flag_number",
+    "psh_flag_number",
+    "ack_count",
+    "syn_count",
+    "fin_count",
+    "rst_count",
+    "Tot sum",
+    "Max",
+    "Tot size",
+    "IAT",
+    "Magnitue",
+    "Radius",
+    "Weight"
+  ],
+  "classes": [
+    "Attack",
+    "Benign"
+  ],
+  "models": [
+    {
+      "model": "Random Forest",
+      "test_samples": 81267,
+      "accuracy": 0.9866858626502762,
+      "precision_macro": 0.9872333311912742,
+      "recall_macro": 0.9860659807256816,
+      "f1_macro": 0.9865962461544193
+    },
+    {
+      "model": "RFE + MLP",
+      "test_samples": 81267,
+      "accuracy": 0.9609189461897203,
+      "precision_macro": 0.9635322727324229,
+      "recall_macro": 0.9587968319096742,
+      "f1_macro": 0.960524943316133
+    }
+  ],
+  "elapsed_seconds": 118.81,
+  "notes": [
+    "RFE was fitted using a random subset of training data only.",
+    "The test set was not used for feature selection or model fitting.",
+    "Results apply only to the selected binary dataset and its split."
+  ]
+}

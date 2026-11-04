@@ -37,6 +37,7 @@ import {
 } from 'lucide-react';
 import { api, login, setToken, getToken } from './services/api';
 import ImageDetection from './ImageDetection';
+import NetworkDetection from './NetworkDetection';
 import {
   ResponsiveContainer,
   BarChart,
@@ -55,6 +56,7 @@ const nav = [
   ['Behavioral AI Lab', '/behavior', Activity],
   ['Communication Security', '/communication', Radio],
   ['Network Traffic Analysis', '/network-traffic', Wifi],
+  ['Network Traffic AI', '/network-detection', Activity],
   ['Image-Based Detection', '/image-detection', ImageIcon],
   ['Credential Monitoring', '/credentials', KeyRound],
   ['Firmware Integrity', '/firmware', FileCheck2],
@@ -292,6 +294,7 @@ function App() {
             <Route path="/behavior" element={<Behavior />} />
             <Route path="/communication" element={<Communication />} />
             <Route path="/network-traffic" element={<NetworkTrafficAnalysis />} />
+            <Route path="/network-detection" element={<NetworkDetection />} />
             <Route path="/image-detection" element={<ImageDetection />} />
             <Route
               path="/credentials"

@@ -105,9 +105,21 @@ The training/evaluation script writes a reproducible JSON summary to `data/gener
 | `/api/v1/audit` | Recent audit entries |
 | `/api/v1/settings` | Read prototype configuration |
 | `/api/v1/export/devices` | CSV device export |
+| `/api/v1/analysis/network-traffic` | Random Forest (CICIoMT2024) classification of one 45-feature network flow |
 | `/api/v1/image-detection/predict` | CNN classification of an uploaded 8×8 traffic image |
 
 All API data are authenticated except health/readiness and registration/login. Interactive API docs provide request/response schemas.
+
+## Network-traffic detection (Random Forest module)
+
+The **Network Traffic AI** page (`/network-detection`) classifies a single network flow as `Attack` or `Benign`. It is a different page from **Network Traffic Analysis** (`/network-traffic`), which summarises the DMP IoMT dataset.
+
+- **Model:** `backend/app/network_model/random_forest.joblib`, 100 trees. `preprocessing.joblib` holds the 45 feature names and the median `SimpleImputer` fitted on the training split.
+- **Training data:** the CICIoMT2024 Wi-Fi/MQTT binary subset, 381,815 training rows and 81,267 test rows. The train/test overlap audit found no shared rows.
+- **Service and API:** `backend/app/network_detection.py`. `POST /api/v1/analysis/network-traffic` takes `{"sample": {<45 features>}}`. It requires a login token and writes each prediction to the audit log.
+- **Recorded evaluation:** `ml_image_detection/reports/tabular/random_forest_metrics.json` gives test accuracy 0.98669 and macro F1 0.98660. `backend/tests/test_network_detection.py` reproduces this exactly whenever the test CSV is available. Point `MEDSECURE_CICIOMT_TEST_CSV` at it if it isn't at `D:\MedSecure-ML\data\binary_evaluation\test.csv`.
+- **Scripts:** `ml_image_detection/train_tabular_models.py` (training) and `validate_network_model.py` (evaluation).
+- **Version note:** the model files were saved with scikit-learn 1.9.1, but the app pins 1.8.0 because Ruchita's SVM can't be loaded by 1.9.x. Under 1.8.0 the model reproduces the recorded test-set predictions exactly; it just logs `InconsistentVersionWarning` once when it loads. The original files are kept unchanged.
 
 ## Image-based detection (CNN module)
 

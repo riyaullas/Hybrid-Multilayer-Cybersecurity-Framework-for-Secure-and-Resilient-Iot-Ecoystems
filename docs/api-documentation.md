@@ -74,3 +74,16 @@ Response:
 ```
 
 Errors: `400` unreadable image, `401` no token, `413` larger than 2 MB, `415` not PNG/JPEG, `422` not 8×8, `503` PyTorch unavailable.
+
+## Network-traffic detection (Random Forest)
+
+`POST /api/v1/analysis/network-traffic` (bearer token required). The body is `{"sample": {...}}` and must contain all 45 CICIoMT2024 flow features as finite numbers: `Header_Length`, `Protocol Type`, `Duration`, `Rate`, …, `Weight`. The full list is in `backend/app/network_model/preprocessing.joblib`.
+
+Response:
+
+```json
+{"classification": "Attack", "model": "RandomForest-CICIoMT2024", "feature_count": 45,
+ "probabilities": {"Attack": 0.97, "Benign": 0.03}, "synthetic": false, "warning": "Research prototype. ..."}
+```
+
+Errors: `401` no token, `422` missing or non-numeric feature, `503` model files unavailable.
