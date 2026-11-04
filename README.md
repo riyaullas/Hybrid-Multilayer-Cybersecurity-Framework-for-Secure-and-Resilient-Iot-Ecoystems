@@ -60,7 +60,7 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:5173 and sign in with the administrator credentials you created above. The frontend API default is `http://localhost:8000/api/v1`; override with `VITE_API_URL` if needed.
+Open http://localhost:5173 and sign in with the administrator credentials you created above. The frontend API default is `http://localhost:8000/api/v1`; override with `VITE_API_URL` if needed. The backend accepts browser requests from ports 5173–5175 on `localhost` and `127.0.0.1`. For any other origin, set `FRONTEND_ORIGINS` to a comma-separated list, for example `FRONTEND_ORIGINS=http://localhost:3000`, before starting the API.
 
 ## First-run demo sequence
 
@@ -142,7 +142,7 @@ python ml_image_detection/check_cnn.py   # set MEDSECURE_IMAGE_ROOT to point at 
 
 ## Risk model
 
-Initial layer weights: authentication 25%, behavior 20%, communication 20%, credential misuse 15%, firmware integrity 20%. For each evaluated layer, the latest high-severity evidence among recent events contributes a simple risk value (Info 5, Medium 40, High 75, Critical 100). The aggregate is the weighted mean over **evaluated** layers only; coverage is the sum of evaluated layer weights. Unevaluated layers are reported explicitly, not silently treated as safe. Trust = 100 − risk. This is an illustrative scoring policy, not a validated compromise probability.
+Initial layer weights: authentication 25%, behavior 20%, communication 20%, credential misuse 15%, firmware integrity 20%. For each evaluated layer, only the **latest** detector event contributes a risk value (Info 0, Low 15, Medium 40, High 75, Critical 100). Older events stay in the audit trail but don't override the newest result. The aggregate is the weighted mean over **evaluated** layers only; coverage is the sum of evaluated layer weights. Unevaluated layers are reported explicitly, not silently treated as safe. Trust = 100 − risk. This is an illustrative scoring policy, not a validated compromise probability.
 
 ## Security notes and limitations
 

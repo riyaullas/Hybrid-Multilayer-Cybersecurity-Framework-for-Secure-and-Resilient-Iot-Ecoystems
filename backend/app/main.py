@@ -16,22 +16,20 @@ from .ml_service import infer, evaluate, FEATURES
 
 Base.metadata.create_all(bind=engine)
 app=FastAPI(title='MedSecure Sentinel API', version='1.0.0', description='Synthetic healthcare IoT cybersecurity research prototype. All generated activity is simulated.')
-origins=os.getenv('FRONTEND_ORIGINS','http://localhost:5173').split(',')
-app.add_middleware(CORSMiddleware, allow_origins=[o.strip() for o in origins], allow_credentials=True, allow_methods=['*'], allow_headers=['*'])
+# Single CORS configuration. FRONTEND_ORIGINS (comma-separated) overrides the defaults,
+# which cover the Vite dev ports used by the team (5173-5175) on localhost and 127.0.0.1.
+DEFAULT_FRONTEND_ORIGINS=','.join(f'http://{host}:{port}' for host in ('localhost','127.0.0.1') for port in (5173,5174,5175))
+origins=[o.strip() for o in os.getenv('FRONTEND_ORIGINS',DEFAULT_FRONTEND_ORIGINS).split(',') if o.strip()]
+app.add_middleware(CORSMiddleware, allow_origins=origins, allow_credentials=True, allow_methods=['*'], allow_headers=['*'])
 KEY_DIR=os.path.join(os.path.dirname(__file__),'..','device_keys'); os.makedirs(KEY_DIR,exist_ok=True)
-DEFAULT_SETTINGS={'risk_weights':{'authentication':25,
-                                  'behavior':20,
-                                  'communication':20,
-                                  'credentials':15,
-                                  'firmware':20},
-                                  'communication':{'latency_ms':120,
-                                                   'jitter_ms':35,
-                                                   'packet_loss_pct':5,
-                                                   'reconnects':8},
-                                                   'credentials':{'failed_attempts':5,
-                                                                  'window_minutes':10},
-                                                                  'minimum_firmware_version':'1.0.0',
-                                                                  'low_coverage_alert_pct':40,'ml':{'contamination':0.05,'seed':42}}
+DEFAULT_SETTINGS={
+    'risk_weights':{'authentication':25,'behavior':20,'communication':20,'credentials':15,'firmware':20},
+    'communication':{'latency_ms':120,'jitter_ms':35,'packet_loss_pct':5,'reconnects':8},
+    'credentials':{'failed_attempts':5,'window_minutes':10},
+    'minimum_firmware_version':'1.0.0',
+    'low_coverage_alert_pct':40,
+    'ml':{'contamination':0.05,'seed':42},
+}
 
 class RegisterIn(BaseModel): username:str=Field(min_length=3,max_length=80); password:str=Field(min_length=10,max_length=128); role:str='analyst'
 class LoginIn(BaseModel): username:str; password:str
@@ -66,14 +64,6 @@ def device_dict(d):
 def event_dict(e): return {'id':e.id,'device_id':e.device_id,'category':e.category,'severity':e.severity,'title':e.title,'description':e.description,'evidence':e.evidence,'simulated':e.simulated,'created_at':e.created_at}
 def incident_dict(i): return {'id':i.id,'title':i.title,'description':i.description,'category':i.category,'severity':i.severity,'device_id':i.device_id,'status':i.status,'evidence':i.evidence,'assigned_to':i.assigned_to,'resolution_notes':i.resolution_notes,'created_at':i.created_at,'updated_at':i.updated_at}
 def severity(score): return 'Critical' if score>=75 else 'High' if score>=50 else 'Medium' if score>=25 else 'Low'
-import json
-
-from sqlalchemy import desc
-
-# Adjust these imports to match your project structure.
-# from app.models import AppSetting, Event
-# from app.settings import DEFAULT_SETTINGS
-# from app.risk import severity
 
 
 def recalc_risk(db, d):
