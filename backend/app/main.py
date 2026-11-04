@@ -1,3 +1,4 @@
+from pathlib import Path
 import os, json, hashlib, secrets, time, re
 from datetime import datetime, timedelta, timezone
 from typing import Optional
@@ -12,24 +13,25 @@ from .database import Base, engine, get_db
 from .models import User, Device, Event, Incident, Challenge, Firmware, Audit, AppSetting
 from .security import hash_password, verify_password, create_token, decode_token, new_device_keypair, sign_payload, verify_signature
 from .ml_service import infer, evaluate, FEATURES
-from .network_detection import predict_network_traffic
 
 Base.metadata.create_all(bind=engine)
 app=FastAPI(title='MedSecure Sentinel API', version='1.0.0', description='Synthetic healthcare IoT cybersecurity research prototype. All generated activity is simulated.')
-origins=os.getenv('FRONTEND_ORIGINS','http://localhost:5173,http://localhost:5174').split(',')
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://localhost:5174",
-        "http://localhost:5175",
-    ],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+origins=os.getenv('FRONTEND_ORIGINS','http://localhost:5173').split(',')
+app.add_middleware(CORSMiddleware, allow_origins=[o.strip() for o in origins], allow_credentials=True, allow_methods=['*'], allow_headers=['*'])
 KEY_DIR=os.path.join(os.path.dirname(__file__),'..','device_keys'); os.makedirs(KEY_DIR,exist_ok=True)
-DEFAULT_SETTINGS={'risk_weights':{'authentication':25,'behavior':20,'communication':20,'credentials':15,'firmware':20},'communication':{'latency_ms':120,'jitter_ms':35,'packet_loss_pct':5,'reconnects':8},'credentials':{'failed_attempts':5,'window_minutes':10},'minimum_firmware_version':'1.0.0','low_coverage_alert_pct':40,'ml':{'contamination':0.05,'seed':42}}
+DEFAULT_SETTINGS={'risk_weights':{'authentication':25,
+                                  'behavior':20,
+                                  'communication':20,
+                                  'credentials':15,
+                                  'firmware':20},
+                                  'communication':{'latency_ms':120,
+                                                   'jitter_ms':35,
+                                                   'packet_loss_pct':5,
+                                                   'reconnects':8},
+                                                   'credentials':{'failed_attempts':5,
+                                                                  'window_minutes':10},
+                                                                  'minimum_firmware_version':'1.0.0',
+                                                                  'low_coverage_alert_pct':40,'ml':{'contamination':0.05,'seed':42}}
 
 class RegisterIn(BaseModel): username:str=Field(min_length=3,max_length=80); password:str=Field(min_length=10,max_length=128); role:str='analyst'
 class LoginIn(BaseModel): username:str; password:str
@@ -64,26 +66,234 @@ def device_dict(d):
 def event_dict(e): return {'id':e.id,'device_id':e.device_id,'category':e.category,'severity':e.severity,'title':e.title,'description':e.description,'evidence':e.evidence,'simulated':e.simulated,'created_at':e.created_at}
 def incident_dict(i): return {'id':i.id,'title':i.title,'description':i.description,'category':i.category,'severity':i.severity,'device_id':i.device_id,'status':i.status,'evidence':i.evidence,'assigned_to':i.assigned_to,'resolution_notes':i.resolution_notes,'created_at':i.created_at,'updated_at':i.updated_at}
 def severity(score): return 'Critical' if score>=75 else 'High' if score>=50 else 'Medium' if score>=25 else 'Low'
+import json
+
+from sqlalchemy import desc
+
+# Adjust these imports to match your project structure.
+# from app.models import AppSetting, Event
+# from app.settings import DEFAULT_SETTINGS
+# from app.risk import severity
+
+
 def recalc_risk(db, d):
-    # Each detector contributes only after evidence exists; unevaluated layers are not treated as safe.
-    stored=db.query(AppSetting).filter_by(key='risk_weights').first(); weights=stored.value if stored and stored.value else DEFAULT_SETTINGS['risk_weights']; evidence={}; scores={}
-    categories={'authentication':'Authentication','behavior':'Behavioral AI','communication':'Communication','credentials':'Credential misuse','firmware':'Firmware integrity'}
-    for key,cat in categories.items():
-        es=db.query(Event).filter(Event.device_id==d.device_id,Event.category==cat).order_by(desc(Event.id)).limit(30).all()
-        if es:
-            risk=max([100 if e.severity=='Critical' else 75 if e.severity=='High' else 40 if e.severity=='Medium' else 5 for e in es[:5]])
-            scores[key]=risk; evidence[key]=[{'event_id':e.id,'title':e.title,'severity':e.severity} for e in es[:3]]
-    available=sum(weights[k] for k in scores)
-    overall=sum(scores[k]*weights[k] for k in scores)/available if available else None
-    coverage=available/sum(weights.values())*100
-    d.risk_score=round(overall,2) if overall is not None else None; d.trust_score=round(100-overall,2) if overall is not None else None; d.risk_category=severity(overall) if overall is not None else 'Not evaluated'
-    db.add(Event(device_id=d.device_id,category='Risk assessment',severity=severity(overall) if overall is not None else 'Info',title='Risk score recalculated',description='Weighted score from evaluated security layers.',evidence={'scores':scores,'weights':weights,'coverage_pct':round(coverage,2),'unevaluated':[k for k in weights if k not in scores]},simulated=True))
-    return {'device_id':d.device_id,'risk_score':d.risk_score,'trust_score':d.trust_score,'risk_category':d.risk_category,'layer_scores':scores,'layer_evidence':evidence,'coverage_pct':round(coverage,2),'unevaluated_layers':[k for k in weights if k not in scores],'note':'Prototype risk score, not a calibrated probability of compromise.'}
+    """
+    Calculate device risk using the latest event for each detector layer.
+
+    Historical events remain stored for auditing, but older events from
+    the same layer do not override the latest detector result.
+
+    This is a synthetic research prototype, not a calibrated
+    probability of compromise.
+    """
+
+    categories = {
+        "authentication": "Authentication",
+        "behavior": "Behavioral AI",
+        "communication": "Communication",
+        "credentials": "Credential misuse",
+        "firmware": "Firmware integrity",
+    }
+
+    severity_scores = {
+        "Critical": 100,
+        "High": 75,
+        "Medium": 40,
+        "Low": 15,
+        "Info": 0,
+    }
+
+    # Load weights from settings, falling back to defaults.
+    stored = db.query(AppSetting).filter_by(key="risk_weights").first()
+
+    raw_weights = (
+        stored.value
+        if stored and stored.value
+        else DEFAULT_SETTINGS["risk_weights"]
+    )
+
+    # The value may be saved as JSON text.
+    if isinstance(raw_weights, str):
+        raw_weights = json.loads(raw_weights)
+
+    # Use every layer, treat a missing weight as 0, and force numbers.
+    weights = {
+        key: float(raw_weights.get(key, 0))
+        for key in categories
+    }
+
+    evidence = {}
+    scores = {}
+
+    for key, category in categories.items():
+
+        # Only detector events are used.
+        # Risk assessment events are excluded because they are summaries,
+        # not independent detector evidence.
+        latest_event = (
+            db.query(Event)
+            .filter(
+                Event.device_id == d.device_id,
+                Event.category == category,
+            )
+            .order_by(desc(Event.id))
+            .first()
+        )
+
+        if latest_event is not None:
+            score = severity_scores.get(latest_event.severity, 40)
+
+            scores[key] = score
+
+            evidence[key] = [{
+                "event_id": latest_event.id,
+                "title": latest_event.title,
+                "severity": latest_event.severity,
+            }]
+
+    available_weight = sum(weights[key] for key in scores)
+    total_weight = sum(weights.values())
+
+    overall = (
+        sum(scores[key] * weights[key] for key in scores)
+        / available_weight
+        if available_weight > 0
+        else None
+    )
+
+    coverage = (
+        available_weight / total_weight * 100
+        if total_weight > 0
+        else 0
+    )
+
+    if overall is not None:
+        d.risk_score = round(overall, 2)
+        d.trust_score = round(100 - overall, 2)
+        d.risk_category = severity(overall)
+    else:
+        d.risk_score = None
+        d.trust_score = None
+        d.risk_category = "Not evaluated"
+
+    db.add(
+        Event(
+            device_id=d.device_id,
+            category="Risk assessment",
+            severity=(
+                severity(overall)
+                if overall is not None
+                else "Info"
+            ),
+            title="Risk score recalculated",
+            description=(
+                "Weighted score calculated from the latest available "
+                "event in each evaluated security layer."
+            ),
+            evidence={
+                "scores": scores,
+                "weights": weights,
+                "coverage_pct": round(coverage, 2),
+                "unevaluated": [
+                    key for key in weights if key not in scores
+                ],
+            },
+            simulated=True,
+        )
+    )
+
+    return {
+        "device_id": d.device_id,
+        "risk_score": d.risk_score,
+        "trust_score": d.trust_score,
+        "risk_category": d.risk_category,
+        "layer_scores": scores,
+        "layer_evidence": evidence,
+        "coverage_pct": round(coverage, 2),
+        "unevaluated_layers": [
+            key for key in weights if key not in scores
+        ],
+        "note": (
+            "Prototype risk score, not a calibrated probability "
+            "of compromise."
+        ),
+    }
+@app.get('/api/v1/research/dataset-predict/{record_index}')
+def dataset_predict(
+    record_index: int,
+    user: User = Depends(current_user),
+    db: Session = Depends(get_db)
+):
+    import pandas as pd
+    import joblib
+
+    project_dir = Path(__file__).resolve().parents[2]
+    dataset_path = project_dir / "datasets" / "my_data.csv"
+    model_path = project_dir / "ml_model" / "medsecure_model.joblib"
+
+    if not dataset_path.exists() or not model_path.exists():
+        raise HTTPException(500, "Dataset or trained model not found")
+
+    df = pd.read_csv(dataset_path)
+
+    if record_index < 0 or record_index >= len(df):
+        raise HTTPException(404, "Dataset record not found")
+
+    bundle = joblib.load(model_path)
+    model = bundle["model"]
+    feature_columns = bundle["feature_columns"]
+
+    row = df.iloc[[record_index]].copy()
+    actual_category = str(row["Attack Category"].iloc[0])
+
+    row = row.drop(
+        columns=[
+            c for c in [
+                "Attack Category", "Label",
+                "SrcAddr", "DstAddr", "SrcMac", "DstMac"
+            ]
+            if c in row.columns
+        ]
+    )
+
+    row = row.reindex(columns=feature_columns)
+    prediction = str(model.predict(row)[0])
+
+    audit(
+        db=db,
+        actor=user.username,
+        action="dataset.ml_prediction",
+        resource=str(record_index),
+    )
+    db.commit()
+
+    return {
+        "record_index": record_index,
+        "predicted_category": prediction,
+        "actual_category": actual_category,
+        "correct": prediction == actual_category,
+        "model": "Random Forest",
+        "dataset": "DMP IoMT",
+        "note": "Dataset demonstration; not a live-device prediction."
+    }
+
 
 @app.get('/health')
-def health(): return {'status':'ok','service':'MedSecure Sentinel API','mode':'synthetic research prototype'}
+def health():
+    return {
+        'status': 'ok',
+        'service': 'MedSecure Sentinel API',
+        'mode': 'synthetic research prototype'
+    }
+
+
 @app.get('/ready')
-def ready(db:Session=Depends(get_db)): return {'ready':True,'database':'connected','devices':db.query(Device).count()}
+def ready(db: Session = Depends(get_db)):
+    return {
+        'ready': True,
+        'database': 'connected',
+        'devices': db.query(Device).count()
+    }
 
 @app.post('/api/v1/auth/register')
 def register(body:RegisterIn, db:Session=Depends(get_db)):
@@ -267,32 +477,33 @@ def seed(db:Session=Depends(get_db), user:User=Depends(admin_user)):
         os.chmod(os.path.join(KEY_DIR,did+'.pem'),0o600)
     db.commit(); audit(db,user.username,'demo.seed','devices',metadata={'count':len(samples)}); db.commit(); return {'message':'Synthetic devices initialized','count':len(samples),'synthetic':True}
 
+
+# ---------------------------------------------------------------------------
+# Image-based traffic detection (CNN on 8x8 CICIoMT2024 traffic images)
+# ---------------------------------------------------------------------------
+MAX_IMAGE_BYTES = 2 * 1024 * 1024
+
+
 @app.post('/api/v1/image-detection/predict')
-async def predict_uploaded_image(file: UploadFile = File(...)):
+async def predict_uploaded_image(file: UploadFile = File(...), db: Session = Depends(get_db), user: User = Depends(current_user)):
     if file.content_type not in ('image/png', 'image/jpeg'):
-        raise HTTPException(
-            status_code=415,
-            detail='Upload a PNG or JPEG traffic-representation image.'
-        )
-
-    contents = await file.read(2 * 1024 * 1024 + 1)
-    if len(contents) > 2 * 1024 * 1024:
-        raise HTTPException(
-            status_code=413,
-            detail='Image must be under 2 MB.'
-        )
-
+        raise HTTPException(415, 'Upload a PNG or JPEG traffic-representation image.')
+    contents = await file.read(MAX_IMAGE_BYTES + 1)
+    if len(contents) > MAX_IMAGE_BYTES:
+        raise HTTPException(413, 'Image must be under 2 MB.')
+    try:
+        # Imported lazily so the rest of the API still starts if PyTorch is unavailable.
+        from .image_detection.cnn_service import predict_image
+    except ImportError as exc:
+        raise HTTPException(503, f'Image detection is unavailable: {exc}')
     try:
         with Image.open(BytesIO(contents)) as image:
             image.load()
-            if image.size != (8, 8):
-                raise HTTPException(
-                    status_code=422,
-                    detail='This CNN expects an 8x8 generated traffic image.'
-                )
-            from .image_detection.cnn_service import predict_image
             result = predict_image(image)
     except UnidentifiedImageError:
-        raise HTTPException(status_code=400, detail='Invalid image file.')
-
+        raise HTTPException(400, 'Invalid image file.')
+    except ValueError as exc:
+        raise HTTPException(422, str(exc))
+    audit(db, user.username, 'image.predict', file.filename or 'upload', metadata={'prediction': result['prediction'], 'confidence': result['confidence']})
+    db.commit()
     return result

@@ -4,8 +4,13 @@ from torch import nn
 from PIL import Image
 import numpy as np
 
-MODEL_PATH = Path("backend/app/image_detection/cnn_model.pt")
-IMAGE_ROOT = Path(r"D:\MedSecure-ML\output\images")
+import os
+
+ROOT = Path(__file__).resolve().parent
+MODEL_PATH = ROOT.parent / "backend" / "app" / "image_detection" / "cnn_model.pt"
+# Generated images (output of generate_images.py). Override with MEDSECURE_IMAGE_ROOT,
+# e.g. MEDSECURE_IMAGE_ROOT=D:\MedSecure-ML\output\images
+IMAGE_ROOT = Path(os.environ.get("MEDSECURE_IMAGE_ROOT", ROOT / "output" / "images"))
 
 class SmallCNN(nn.Module):
     def __init__(self, n_classes):

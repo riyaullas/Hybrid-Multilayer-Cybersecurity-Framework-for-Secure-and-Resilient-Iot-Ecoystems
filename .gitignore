@@ -29,3 +29,9 @@ frontend/tsconfig.tsbuildinfo
 # Python-generated files
 __pycache__/
 *.py[cod]
+
+# Image-detection pipeline: raw CICIoMT2024 CSVs and generated images are reproducible, keep them out of Git
+ml_image_detection/.venv/
+ml_image_detection/data/
+ml_image_detection/dataset_source/
+ml_image_detection/output/

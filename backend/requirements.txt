@@ -9,3 +9,7 @@ pandas>=2.2,<4
 pytest==9.0.2
 httpx==0.28.1
 python-multipart>=0.0.20
+
+# Image-based detection (CNN) — versions used to load and verify cnn_model.pt
+torch==2.14.1
+Pillow==13.0.0

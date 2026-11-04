@@ -55,3 +55,22 @@ Scenario names: `normal`, `invalid-signature`, `abnormal-behavior`, `suspicious-
 - `404`: unknown resource.
 - `409`: duplicate resource or already-consumed challenge.
 - `422`: request validation/policy failure.
+
+## Image-based detection
+
+`POST /api/v1/image-detection/predict` (bearer token required, `multipart/form-data`, field `file`).
+
+```bash
+curl -X POST http://localhost:8000/api/v1/image-detection/predict \
+  -H 'Authorization: Bearer YOUR_TOKEN' \
+  -F 'file=@test_0000021.png;type=image/png'
+```
+
+Response:
+
+```json
+{"prediction": "Attack", "confidence": 95.63, "probabilities": {"Attack": 95.63, "Benign": 4.37},
+ "model": "SmallCNN", "image_size": "8x8", "note": "Experimental classifier ..."}
+```
+
+Errors: `400` unreadable image, `401` no token, `413` larger than 2 MB, `415` not PNG/JPEG, `422` not 8×8, `503` PyTorch unavailable.
