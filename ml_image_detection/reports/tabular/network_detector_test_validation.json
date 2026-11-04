@@ -1,0 +1,48 @@
+{
+  "dataset": "D:\\MedSecure-ML\\data\\binary_evaluation\\test.csv",
+  "test_rows_evaluated": 81267,
+  "features_used": 45,
+  "accuracy": 0.9866858626502762,
+  "classification_report": {
+    "Attack": {
+      "precision": 0.9810856006508181,
+      "recall": 0.994388456252863,
+      "f1-score": 0.9876922376922377,
+      "support": 43660.0
+    },
+    "Benign": {
+      "precision": 0.9933810617317304,
+      "recall": 0.9777435051985003,
+      "f1-score": 0.985500254616601,
+      "support": 37607.0
+    },
+    "accuracy": 0.9866858626502762,
+    "macro avg": {
+      "precision": 0.9872333311912742,
+      "recall": 0.9860659807256816,
+      "f1-score": 0.9865962461544193,
+      "support": 81267.0
+    },
+    "weighted avg": {
+      "precision": 0.9867754305309646,
+      "recall": 0.9866858626502762,
+      "f1-score": 0.9866778787577936,
+      "support": 81267.0
+    }
+  },
+  "confusion_matrix_labels_order": [
+    "Attack",
+    "Benign"
+  ],
+  "confusion_matrix": [
+    [
+      43415,
+      245
+    ],
+    [
+      837,
+      36770
+    ]
+  ],
+  "note": "Evaluation on the prepared test CSV. Interpret as an independent test only if its separation from training data is verified."
+}

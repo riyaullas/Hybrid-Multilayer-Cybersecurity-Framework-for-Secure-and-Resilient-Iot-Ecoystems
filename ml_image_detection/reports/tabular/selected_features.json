@@ -1,0 +1,22 @@
+[
+  "Header_Length",
+  "Protocol Type",
+  "Duration",
+  "Rate",
+  "Srate",
+  "fin_flag_number",
+  "syn_flag_number",
+  "rst_flag_number",
+  "psh_flag_number",
+  "ack_count",
+  "syn_count",
+  "fin_count",
+  "rst_count",
+  "Tot sum",
+  "Max",
+  "Tot size",
+  "IAT",
+  "Magnitue",
+  "Radius",
+  "Weight"
+]

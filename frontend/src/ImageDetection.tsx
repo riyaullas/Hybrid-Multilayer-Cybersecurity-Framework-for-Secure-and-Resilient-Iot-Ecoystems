@@ -146,7 +146,7 @@ export default function ImageDetection() {
               height={160}
               style={{
                 imageRendering: 'pixelated',
-                border: '1px solid var(--border)',
+                border: '1px solid var(--line)',
                 borderRadius: 8
               }}
             />
@@ -191,7 +191,7 @@ export default function ImageDetection() {
               <div
                 style={{
                   height: 8,
-                  background: 'var(--border)',
+                  background: 'var(--line)',
                   borderRadius: 8,
                   overflow: 'hidden'
                 }}
